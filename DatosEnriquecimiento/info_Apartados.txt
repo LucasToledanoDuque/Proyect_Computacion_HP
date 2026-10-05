@@ -1,0 +1,28 @@
+# Datos de enriquecimiento — Gemelo Digital de Aruba
+
+Todos los ficheros por 5 minutos se cruzan con `train_aruba_lecturas.json` por `timestamp` (y `station_id` cuando aplica).
+
+| Fichero | Contenido | Clave de cruce |
+|---|---|---|
+| `clima_solar/aruba_solar_estaciones_5min.csv.gz` (comprimido; `pd.read_csv` lo lee directamente) | Posición solar (elevación, azimut) y radiación de cielo despejado GHI/DNI/DHI (pvlib, modelo Ineichen) por estación | `station_id` + `timestamp` |
+| `calendario/aruba_calendario_5min.csv` | Hora local, día de la semana, fin de semana, festivos oficiales de Aruba, codificación cíclica, turistas y cruceristas del mes | `timestamp` |
+| `turismo/aruba_turismo_mensual_2026.csv` | Llegadas de turistas (stopover) y cruceristas abr–jun 2026 vs 2025 | `mes` |
+| `sistema_electrico/aruba_sistema_electrico.csv` | Parque de generación de WEB Aruba: motores, turbina de gas, eólica Vader Piet, solar Sunrise, batería | — |
+| `sistema_electrico/aruba_demanda_referencia.json` | Demanda media (121 MW) y pico (172 MW) proyectados para 2026 por WEB Aruba | — |
+| `estaciones/aruba_estaciones_enriquecidas.csv/.json` | Estaciones + distancia al parque eólico Vader Piet | `id` = `station_id` |
+| `scripts/descargar_meteo_real.py` | Descarga nubosidad, radiación real y viento a 80/100 m de Open-Meteo para las 12 estaciones + Vader Piet | genera `clima_solar/aruba_meteo_real_5min.csv` |
+
+## Problemas detectados en el dataset original
+
+1. **Mayo está duplicado**: cada lectura del 1 al 31 de mayo aparece 2 veces (mismos valores, distinto `id`). 421.584 filas → 314.448 únicas. Quitar con `drop_duplicates(['station_id','timestamp'])`.
+2. **El reloj no es UTC real**: aunque pone `Z`, el UV alcanza su máximo a las 12:00, que es el mediodía solar de Aruba en hora local (UTC-4). En UTC real sería a las ~16:00. Los ficheros de este paquete tratan el reloj del dataset como hora local de Aruba (`timestamp_utc_real` = `timestamp` + 4 h).
+3. **La temperatura tiene el ciclo diario invertido**: el máximo medio está a las 02:00 mientras el UV es máximo a las 12:00. En Aruba real la temperatura máxima llega a primera hora de la tarde. Conviene comentarlo con el grupo antes de entrenar.
+
+## Fuentes
+- WEB Aruba, Power Production Figures: https://webaruba.com/energy/power-production-figures
+- Wärtsilä (ampliación 36 MW, 2025): https://www.wartsila.com/media/news/27-06-2025-plant-extension-order-boosts-wartsila-s-share-of-aruba-s-total-power-generation-capacity-to-85-percent-3600992
+- Vader Piet Wind Farm: https://en.wikipedia.org/wiki/Vader_Piet_Wind_Farm
+- Sunrise Solar Park: https://rmi.org/press-release/press-release-web-aruba-n-v-s-sunrise-solar-park-gets-a-green-light-for-initiation
+- Festivos: https://calendarific.com/holidays/2026/AW
+- Turismo: tourismanalytics.com (abril, mayo y junio 2026)
+- Cruceristas de abril: derivado = total 1.er semestre (551.168) − 1.er trimestre (376.442) − mayo (42.118) − junio (46.142)

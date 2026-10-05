@@ -1,0 +1,134 @@
+[
+  {
+    "id":"4ca4c103-894d-4f59-a911-f3abb8077e3c",
+    "name":"Alto Vista",
+    "code":"WS-ALT-11",
+    "latitude":12.5912,
+    "longitude":-70.0374,
+    "elevation_m":25,
+    "district":"Noord",
+    "is_active":true,
+    "dist_vader_piet_km":20.53
+  },
+  {
+    "id":"de2ee07b-de63-49db-a669-64177a688bbf",
+    "name":"Queen Beatrix Airport",
+    "code":"WS-APT-02",
+    "latitude":12.5042,
+    "longitude":-70.0031,
+    "elevation_m":18,
+    "district":"Oranjestad",
+    "is_active":true,
+    "dist_vader_piet_km":12.61
+  },
+  {
+    "id":"acb2fa5c-518a-4a38-b68d-bf8e3b041ccf",
+    "name":"Arikok National Park",
+    "code":"WS-ARK-10",
+    "latitude":12.5009,
+    "longitude":-69.9538,
+    "elevation_m":120,
+    "district":"Santa Cruz",
+    "is_active":true,
+    "dist_vader_piet_km":7.43
+  },
+  {
+    "id":"f678bd98-07d3-459d-bd4d-7aaba7051847",
+    "name":"Hooiberg Summit",
+    "code":"WS-HOO-07",
+    "latitude":12.5204,
+    "longitude":-69.9992,
+    "elevation_m":165,
+    "district":"Santa Cruz",
+    "is_active":true,
+    "dist_vader_piet_km":12.81
+  },
+  {
+    "id":"8f0185fa-a4c3-41c1-8f3b-d08f4f6aece0",
+    "name":"Malmok",
+    "code":"WS-MAL-12",
+    "latitude":12.5961,
+    "longitude":-70.0489,
+    "elevation_m":6,
+    "district":"Noord",
+    "is_active":true,
+    "dist_vader_piet_km":21.85
+  },
+  {
+    "id":"09ea9cd3-4d28-4049-9dfb-3c5bd5849e9c",
+    "name":"Noord",
+    "code":"WS-NRD-03",
+    "latitude":12.5645,
+    "longitude":-70.0319,
+    "elevation_m":15,
+    "district":"Noord",
+    "is_active":true,
+    "dist_vader_piet_km":18.29
+  },
+  {
+    "id":"c3a0e9a3-36fe-4c50-8c3e-e100045b4a63",
+    "name":"Oranjestad Central",
+    "code":"WS-ORA-01",
+    "latitude":12.5201,
+    "longitude":-70.0371,
+    "elevation_m":5,
+    "district":"Oranjestad",
+    "is_active":true,
+    "dist_vader_piet_km":16.65
+  },
+  {
+    "id":"5c5c4158-91cb-4073-ab4c-9bb10037dc16",
+    "name":"Paradera",
+    "code":"WS-PAR-06",
+    "latitude":12.5354,
+    "longitude":-70.005,
+    "elevation_m":30,
+    "district":"Paradera",
+    "is_active":true,
+    "dist_vader_piet_km":14.12
+  },
+  {
+    "id":"d8a1ce0a-873e-436f-9c1d-a2179ee2601c",
+    "name":"Palm Beach",
+    "code":"WS-PLM-04",
+    "latitude":12.5626,
+    "longitude":-70.0417,
+    "elevation_m":3,
+    "district":"Noord",
+    "is_active":true,
+    "dist_vader_piet_km":19.08
+  },
+  {
+    "id":"82a31d3a-9895-42e5-8ea0-11e8cb15b964",
+    "name":"Savaneta",
+    "code":"WS-SAV-08",
+    "latitude":12.4526,
+    "longitude":-69.9497,
+    "elevation_m":4,
+    "district":"Savaneta",
+    "is_active":true,
+    "dist_vader_piet_km":6.8
+  },
+  {
+    "id":"c2d4a677-28eb-494b-ad99-d4dfc110e474",
+    "name":"Santa Cruz",
+    "code":"WS-SCR-05",
+    "latitude":12.5114,
+    "longitude":-69.9804,
+    "elevation_m":45,
+    "district":"Santa Cruz",
+    "is_active":true,
+    "dist_vader_piet_km":10.54
+  },
+  {
+    "id":"963fdb57-b257-472d-b56e-892b265c2524",
+    "name":"San Nicolaas",
+    "code":"WS-SNC-09",
+    "latitude":12.4364,
+    "longitude":-69.909,
+    "elevation_m":8,
+    "district":"San Nicolaas",
+    "is_active":true,
+    "dist_vader_piet_km":4.62
+  }
+]

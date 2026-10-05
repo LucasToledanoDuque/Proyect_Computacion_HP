@@ -1,0 +1,102 @@
+DESCRIPCION DE DATOS - DatosEnriquecimiento
+Gemelo Digital de Aruba - Proyectos de Computacion I
+==================================================================
+
+1. calendario/aruba_calendario_5min.csv
+------------------------------------------------------------------
+Una fila por cada intervalo de 5 minutos, igual que las lecturas
+(26.204 filas). Sirve para que el modelo sepa que tipo de dia y de
+hora es, lo que mas influye en la demanda electrica.
+
+  - timestamp: clave para cruzarlo con las lecturas.
+  - fecha_local, hora_local, minuto, mes, dia_del_anio.
+  - dia_semana (0 = lunes), es_fin_de_semana, es_festivo,
+    festivo_nombre, es_laborable.
+  - hora_sin / hora_cos y dow_sin / dow_cos: la hora y el dia de la
+    semana codificados en circulo, para que el modelo entienda que
+    las 23:55 estan pegadas a las 00:00.
+  - turistas_stopover_mes, turistas_stopover_mes_2025,
+    turistas_stopover_dia_medio y pasajeros_crucero_mes: indican
+    cuanta gente hay en la isla. Hoteles y aire acondicionado pesan
+    mucho en el consumo de Aruba.
+
+
+2. clima_solar/aruba_solar_estaciones_5min.csv.gz
+------------------------------------------------------------------
+Una fila por estacion y por intervalo de 5 minutos (314.448 filas,
+una por cada lectura sin duplicados). Es la base para estimar la
+produccion solar. Esta comprimido; pd.read_csv lo lee directamente.
+
+  - station_id + timestamp: clave de cruce.
+  - timestamp_utc_real: la hora corregida a UTC (+4 h).
+  - solar_elevation_deg y solar_azimuth_deg: altura y direccion
+    del sol.
+  - ghi_clearsky_wm2, dni_clearsky_wm2 y dhi_clearsky_wm2: radiacion
+    que llegaria con el cielo despejado (global, directa y difusa),
+    en W/m2. Calculada con pvlib (modelo Ineichen), no medida.
+  - dni_extraterrestrial_wm2: radiacion fuera de la atmosfera.
+  - is_daylight: 1 si es de dia.
+
+Cuando se ejecute el script de descarga, aqui se guardara tambien
+aruba_meteo_real_5min.csv, con la radiacion y las nubes reales.
+
+
+3. estaciones/aruba_estaciones_enriquecidas.csv / .json
+------------------------------------------------------------------
+Las 12 estaciones (nombre, codigo, coordenadas, altitud, distrito)
+con una columna nueva:
+
+  - dist_vader_piet_km: distancia de cada estacion al parque eolico.
+    Sirve para decidir que estacion usar como referencia del viento
+    del parque.
+
+El .json lo usa el script de descarga.
+
+
+4. sistema_electrico/
+------------------------------------------------------------------
+aruba_sistema_electrico.csv
+  Una fila por planta, con unidad, tipo, capacidad_mw, operador,
+  coordenadas (solo de Vader Piet) y nota. Plantas de WEB Aruba:
+    - Cuatro grupos de motores (47,4 + 45,6 + 36,2 + 103,2 MW) y la
+      turbina de gas (20 MW).
+    - Parque eolico Vader Piet (30 MW) y Sunrise Solar Park (6,1 MW).
+    - Bateria de 1 MW / 4 MWh.
+
+aruba_demanda_referencia.json
+  Cifras clave: 252,4 MW firmes, 36,1 MW renovables y la demanda
+  prevista para 2026 (121 MW de media, 172 MW de pico).
+
+Es lo necesario para el algoritmo de despacho: que plantas hay y
+cuanto puede dar cada una.
+
+
+5. turismo/aruba_turismo_mensual_2026.csv
+------------------------------------------------------------------
+Tres filas, de abril a junio de 2026. Para cada mes: turistas
+(stopover), los del mismo mes de 2025, la variacion en %, los
+llegados de EE. UU. y los pasajeros de crucero. La columna
+cruceros_nota explica que los cruceristas de abril estan calculados
+por resta. Es el resumen del que salen las columnas de turismo del
+calendario.
+
+
+6. scripts/descargar_meteo_real.py
+------------------------------------------------------------------
+Descarga de Open-Meteo los datos reales de abril a junio para las
+12 estaciones y para Vader Piet:
+  - Nubosidad.
+  - Radiacion real (global, directa y difusa).
+  - Viento a 10, 80 y 100 m (80 m es la altura de las turbinas).
+  - Temperatura, humedad, lluvia y presion.
+
+
+PROBLEMAS DETECTADOS EN EL DATASET ORIGINAL (train_aruba_lecturas.json)
+==================================================================
+  1. Mayo esta duplicado entero: mismos valores con otro id.
+     De 421.584 filas solo 314.448 son unicas.
+     Solucion: df.drop_duplicates(['station_id', 'timestamp'])
+  2. La hora no es UTC real: aunque pone "Z", el UV llega a su
+     maximo a las 12:00, el mediodia de Aruba en hora local (UTC-4).
+  3. La temperatura tiene el ciclo del dia al reves: el maximo medio
+     cae a las 02:00 y el del UV a las 12:00.
