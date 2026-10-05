@@ -1,0 +1,13 @@
+id,name,code,latitude,longitude,elevation_m,district,is_active,dist_vader_piet_km
+4ca4c103-894d-4f59-a911-f3abb8077e3c,Alto Vista,WS-ALT-11,12.5912,-70.0374,25,Noord,True,20.53
+de2ee07b-de63-49db-a669-64177a688bbf,Queen Beatrix Airport,WS-APT-02,12.5042,-70.0031,18,Oranjestad,True,12.61
+acb2fa5c-518a-4a38-b68d-bf8e3b041ccf,Arikok National Park,WS-ARK-10,12.5009,-69.9538,120,Santa Cruz,True,7.43
+f678bd98-07d3-459d-bd4d-7aaba7051847,Hooiberg Summit,WS-HOO-07,12.5204,-69.9992,165,Santa Cruz,True,12.81
+8f0185fa-a4c3-41c1-8f3b-d08f4f6aece0,Malmok,WS-MAL-12,12.5961,-70.0489,6,Noord,True,21.85
+09ea9cd3-4d28-4049-9dfb-3c5bd5849e9c,Noord,WS-NRD-03,12.5645,-70.0319,15,Noord,True,18.29
+c3a0e9a3-36fe-4c50-8c3e-e100045b4a63,Oranjestad Central,WS-ORA-01,12.5201,-70.0371,5,Oranjestad,True,16.65
+5c5c4158-91cb-4073-ab4c-9bb10037dc16,Paradera,WS-PAR-06,12.5354,-70.005,30,Paradera,True,14.12
+d8a1ce0a-873e-436f-9c1d-a2179ee2601c,Palm Beach,WS-PLM-04,12.5626,-70.0417,3,Noord,True,19.08
+82a31d3a-9895-42e5-8ea0-11e8cb15b964,Savaneta,WS-SAV-08,12.4526,-69.9497,4,Savaneta,True,6.8
+c2d4a677-28eb-494b-ad99-d4dfc110e474,Santa Cruz,WS-SCR-05,12.5114,-69.9804,45,Santa Cruz,True,10.54
+963fdb57-b257-472d-b56e-892b265c2524,San Nicolaas,WS-SNC-09,12.4364,-69.909,8,San Nicolaas,True,4.62
