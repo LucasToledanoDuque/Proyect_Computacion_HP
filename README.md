@@ -62,8 +62,8 @@ pip install -r requirements.txt
 
 ## Equipo
 
-- Franco Zimmermann
 - Lucas Toledano
+- Franco Zimmermann
 - Daniel de Abajo
 - Pablo Rodríguez
 - Carmen Cano
