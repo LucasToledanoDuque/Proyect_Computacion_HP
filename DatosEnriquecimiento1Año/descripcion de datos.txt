@@ -79,6 +79,27 @@ aruba_demanda_referencia.json
 
 No depende de fechas: es copia de la de DatosEnriquecimiento.
 
+web_dashboard_20251228_raw.json
+  Respuesta tal cual del monitor de renovables de WEB Aruba
+  (webaruba.com/renewable-energy-dashboard, fichero
+  app/rest/results.json). Se quedo congelado el 28/12/2025, asi que
+  solo trae un dia. Incluye tambien series de placas solares
+  pequenas (MFA Noord, Kudawecha, Abraham) con huecos.
+
+web_real_20251228_15min.csv
+  Lo util del json anterior en tabla: 95 filas cada 15 minutos,
+  del 27/12/2025 09:45 al 28/12/2025 09:15 (hora local).
+  - timestamp: mismo reloj que las lecturas (hora local de Aruba).
+  - timestamp_utc_real: timestamp + 4 h.
+  - eolica_mw: produccion REAL de Vader Piet (4,8 a 27,3 MW).
+  - demanda_total_mw: produccion total REAL de la isla (114 a 160 MW).
+  - fosil_y_resto_mw: demanda_total_mw - eolica_mw.
+  El json no trae la hora de cada punto, solo algunas etiquetas
+  ("11:11 am", "12:45 am", "6:45 am"...). Encajan con una rejilla
+  de 15 minutos desde las 09:45, que es la que se ha usado.
+  Es el unico dato real de eolica y demanda que hay: sirve para
+  validar y calibrar los datos sinteticos, no para entrenar.
+
 
 5. turismo/aruba_turismo_mensual.csv
 ------------------------------------------------------------------
