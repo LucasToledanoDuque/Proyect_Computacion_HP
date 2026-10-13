@@ -46,7 +46,9 @@ Comprimido; pd.read_csv lo lee directamente.
   - is_daylight: 1 si es de dia.
 
 Cuando se ejecute el script de descarga, aqui se guardara tambien
-aruba_meteo_real_5min.csv, con la radiacion y las nubes reales.
+aruba_meteo_real_5min.csv.gz, con la radiacion y las nubes reales
+(comprimido para no pasar del limite de 100 MB de GitHub;
+pd.read_csv lo lee directamente).
 
 
 3. estaciones/aruba_estaciones_enriquecidas.csv / .json
@@ -56,7 +58,9 @@ con una columna nueva:
 
   - dist_vader_piet_km: distancia de cada estacion al parque eolico.
 
-El .json lo usa el script de descarga. No depende de fechas.
+El .json lo usa el script de descarga, que falla si no esta en
+esta carpeta. No depende de fechas: es copia de la de
+DatosEnriquecimiento.
 
 
 4. sistema_electrico/
@@ -73,7 +77,28 @@ aruba_demanda_referencia.json
   Cifras clave: 252,4 MW firmes, 36,1 MW renovables y la demanda
   prevista para 2026 (121 MW de media, 172 MW de pico).
 
-No depende de fechas.
+No depende de fechas: es copia de la de DatosEnriquecimiento.
+
+web_dashboard_20251228_raw.json
+  Respuesta tal cual del monitor de renovables de WEB Aruba
+  (webaruba.com/renewable-energy-dashboard, fichero
+  app/rest/results.json). Se quedo congelado el 28/12/2025, asi que
+  solo trae un dia. Incluye tambien series de placas solares
+  pequenas (MFA Noord, Kudawecha, Abraham) con huecos.
+
+web_real_20251228_15min.csv
+  Lo util del json anterior en tabla: 95 filas cada 15 minutos,
+  del 27/12/2025 09:45 al 28/12/2025 09:15 (hora local).
+  - timestamp: mismo reloj que las lecturas (hora local de Aruba).
+  - timestamp_utc_real: timestamp + 4 h.
+  - eolica_mw: produccion REAL de Vader Piet (4,8 a 27,3 MW).
+  - demanda_total_mw: produccion total REAL de la isla (114 a 160 MW).
+  - fosil_y_resto_mw: demanda_total_mw - eolica_mw.
+  El json no trae la hora de cada punto, solo algunas etiquetas
+  ("11:11 am", "12:45 am", "6:45 am"...). Encajan con una rejilla
+  de 15 minutos desde las 09:45, que es la que se ha usado.
+  Es el unico dato real de eolica y demanda que hay: sirve para
+  validar y calibrar los datos sinteticos, no para entrenar.
 
 
 5. turismo/aruba_turismo_mensual.csv
@@ -100,9 +125,10 @@ Descarga de Open-Meteo los datos reales del 31 de agosto de 2025 al
   - Temperatura, humedad, lluvia y presion.
 
 Pasa los datos a intervalos de 5 minutos y anade un timestamp ya
-ajustado para cruzarlo con las lecturas.
+ajustado para cruzarlo con las lecturas. Lo guarda en
+clima_solar/aruba_meteo_real_5min.csv.gz.
 Uso, desde la raiz del repo:
-  python DatosEnriquecimiento/scripts/descargar_meteo_real.py
+  python DatosEnriquecimiento1Año/scripts/descargar_meteo_real.py
 
 
 PROBLEMAS DETECTADOS EN Datos/aruba_readings_20260924.json
