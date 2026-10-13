@@ -1,0 +1,9 @@
+unidad,tipo,capacidad_mw,operador,lat,lon,nota
+Recip Phase 1+2 (6 motores),termica_motores,47.4,WEB Aruba,,,
+Recip Phase 3 (4 motores),termica_motores,45.6,WEB Aruba,,,
+Recip Phase 3 Expansion (2 motores),termica_motores,36.2,WEB Aruba,,,2x Wärtsilä 50DF dual-fuel; puesta en marcha prevista mediados 2026
+Recip Phase 4 (6 motores),termica_motores,103.2,WEB Aruba,,,
+Turbina de gas (GT),termica_turbina_gas,20.0,WEB Aruba,,,
+Parque eólico Vader Piet,eolica,30.0,WEB Aruba (compra),12.47411,-69.89111,"10 turbinas x 3 MW, buje 80 m, rotor 90 m, operativo desde dic-2009"
+Sunrise Solar Park,solar_fv,6.1,WEB Aruba,,,"San Nicolas; 5,9 MW en el anuncio de 2017, 6,1 MW según WEB"
+BESS I,almacenamiento,1.0,WEB Aruba,,,1 MW / 4 MWh
