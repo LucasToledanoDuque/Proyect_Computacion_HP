@@ -1,0 +1,130 @@
+DESCRIPCION DE DATOS - DatosEnriquecimiento
+Gemelo Digital de Aruba - Proyectos de Computacion I
+Periodo: 1 de septiembre de 2025 - 17 de septiembre de 2026
+(mismo rango que Datos/aruba_readings_20260924.json)
+==================================================================
+
+1. calendario/aruba_calendario_5min.csv
+------------------------------------------------------------------
+Una fila por cada intervalo de 5 minutos del periodo completo
+(109.992 filas). Incluye tambien los dias que faltan en las lecturas
+(huecos de enero, marzo y mayo); al cruzar, esas filas no se usan.
+Sirve para que el modelo sepa que tipo de dia y de hora es.
+
+  - timestamp: clave para cruzarlo con las lecturas.
+  - fecha_local, hora_local, minuto, mes, dia_del_anio.
+  - dia_semana (0 = lunes), es_fin_de_semana, es_festivo,
+    festivo_nombre, es_laborable.
+  - hora_sin / hora_cos, dow_sin / dow_cos y doy_sin / doy_cos:
+    la hora, el dia de la semana y el dia del anio codificados en
+    circulo, para que el modelo entienda que las 23:55 estan pegadas
+    a las 00:00 y diciembre a enero.
+  - turistas_stopover_mes, turistas_stopover_dia_medio y
+    pasajeros_crucero_mes: cuanta gente hay en la isla cada mes.
+    Vacios en los meses sin dato publicado (ver turismo).
+
+Festivos oficiales incluidos (11):
+  25 y 26 dic 2025, 1 ene, 25 ene (Betico Croes), 16 feb (lunes de
+  Carnaval), 18 mar (Himno y Bandera), 3 abr (Viernes Santo),
+  6 abr (lunes de Pascua), 27 abr (Dia del Rey), 1 may y
+  14 may (Ascension) de 2026.
+
+
+2. clima_solar/aruba_solar_estaciones_5min.csv.gz
+------------------------------------------------------------------
+Una fila por estacion y por intervalo de 5 minutos (1.319.904 filas).
+Comprimido; pd.read_csv lo lee directamente.
+
+  - station_id + timestamp: clave de cruce.
+  - timestamp_utc_real: la hora corregida a UTC (+4 h).
+  - solar_elevation_deg y solar_azimuth_deg: altura y direccion
+    del sol.
+  - ghi_clearsky_wm2, dni_clearsky_wm2 y dhi_clearsky_wm2: radiacion
+    que llegaria con el cielo despejado (global, directa y difusa),
+    en W/m2. Calculada con pvlib (modelo Ineichen), no medida.
+  - dni_extraterrestrial_wm2: radiacion fuera de la atmosfera.
+  - is_daylight: 1 si es de dia.
+
+Cuando se ejecute el script de descarga, aqui se guardara tambien
+aruba_meteo_real_5min.csv, con la radiacion y las nubes reales.
+
+
+3. estaciones/aruba_estaciones_enriquecidas.csv / .json
+------------------------------------------------------------------
+Las 12 estaciones (nombre, codigo, coordenadas, altitud, distrito)
+con una columna nueva:
+
+  - dist_vader_piet_km: distancia de cada estacion al parque eolico.
+
+El .json lo usa el script de descarga. No depende de fechas.
+
+
+4. sistema_electrico/
+------------------------------------------------------------------
+aruba_sistema_electrico.csv
+  Una fila por planta, con unidad, tipo, capacidad_mw, operador,
+  coordenadas (solo de Vader Piet) y nota. Plantas de WEB Aruba:
+    - Cuatro grupos de motores (47,4 + 45,6 + 36,2 + 103,2 MW) y la
+      turbina de gas (20 MW).
+    - Parque eolico Vader Piet (30 MW) y Sunrise Solar Park (6,1 MW).
+    - Bateria de 1 MW / 4 MWh.
+
+aruba_demanda_referencia.json
+  Cifras clave: 252,4 MW firmes, 36,1 MW renovables y la demanda
+  prevista para 2026 (121 MW de media, 172 MW de pico).
+
+No depende de fechas.
+
+
+5. turismo/aruba_turismo_mensual.csv
+------------------------------------------------------------------
+Una fila por mes, de septiembre de 2025 a septiembre de 2026:
+turistas (stopover), los del mismo mes del anio anterior, la
+variacion en %, los pasajeros de crucero y una nota de origen.
+
+Datos que no estan publicados tal cual:
+  - Febrero 2026: turistas y cruceristas calculados por resta de
+    los acumulados publicados.
+  - Abril 2026: cruceristas calculados por resta.
+  - Septiembre 2025: sin dato de cruceros.
+  - Septiembre 2026: aun no publicado.
+
+
+6. scripts/descargar_meteo_real.py
+------------------------------------------------------------------
+Descarga de Open-Meteo los datos reales del 31 de agosto de 2025 al
+18 de septiembre de 2026 para las 12 estaciones y Vader Piet:
+  - Nubosidad.
+  - Radiacion real (global, directa y difusa).
+  - Viento a 10, 80 y 100 m (80 m es la altura de las turbinas).
+  - Temperatura, humedad, lluvia y presion.
+
+Pasa los datos a intervalos de 5 minutos y anade un timestamp ya
+ajustado para cruzarlo con las lecturas.
+Uso, desde la raiz del repo:
+  python DatosEnriquecimiento/scripts/descargar_meteo_real.py
+
+
+PROBLEMAS DETECTADOS EN Datos/aruba_readings_20260924.json
+==================================================================
+  1. Lecturas duplicadas: 82.944 filas repetidas en mayo de 2026.
+     De 1.351.008 filas quedan 1.268.064 unicas.
+     Solucion: df.drop_duplicates(['station_id', 'timestamp'])
+  2. Huecos sin datos en las 12 estaciones: del 4 al 10 de enero,
+     el 31 de marzo y del 18 al 24 de mayo de 2026.
+  3. La hora no es UTC real: aunque pone "Z", el UV llega a su
+     maximo a las 12:00, el mediodia de Aruba en hora local (UTC-4).
+  4. La temperatura tiene el ciclo del dia al reves: el maximo medio
+     cae a las 02:00 y el del UV a las 12:00.
+
+
+FUENTES
+==================================================================
+  - WEB Aruba: https://webaruba.com/energy/power-production-figures
+  - Wartsila: https://www.wartsila.com/media/news/27-06-2025-plant-extension-order-boosts-wartsila-s-share-of-aruba-s-total-power-generation-capacity-to-85-percent-3600992
+  - Vader Piet: https://en.wikipedia.org/wiki/Vader_Piet_Wind_Farm
+  - Sunrise Solar Park: https://rmi.org/press-release/press-release-web-aruba-n-v-s-sunrise-solar-park-gets-a-green-light-for-initiation
+  - Festivos: https://calendarific.com/holidays/2025/AW y https://calendarific.com/holidays/2026/AW
+  - Turismo: Tourism Analytics (tourismanalytics.com), con datos de la
+    Aruba Tourism Authority, y ATA para septiembre de 2025:
+    https://www.gobierno.aw/en/ata-presents-september-results-and-responsible-tourism-impact-report
