@@ -46,7 +46,9 @@ Comprimido; pd.read_csv lo lee directamente.
   - is_daylight: 1 si es de dia.
 
 Cuando se ejecute el script de descarga, aqui se guardara tambien
-aruba_meteo_real_5min.csv, con la radiacion y las nubes reales.
+aruba_meteo_real_5min.csv.gz, con la radiacion y las nubes reales
+(comprimido para no pasar del limite de 100 MB de GitHub;
+pd.read_csv lo lee directamente).
 
 
 3. estaciones/aruba_estaciones_enriquecidas.csv / .json
@@ -56,7 +58,9 @@ con una columna nueva:
 
   - dist_vader_piet_km: distancia de cada estacion al parque eolico.
 
-El .json lo usa el script de descarga. No depende de fechas.
+El .json lo usa el script de descarga, que falla si no esta en
+esta carpeta. No depende de fechas: es copia de la de
+DatosEnriquecimiento.
 
 
 4. sistema_electrico/
@@ -73,7 +77,7 @@ aruba_demanda_referencia.json
   Cifras clave: 252,4 MW firmes, 36,1 MW renovables y la demanda
   prevista para 2026 (121 MW de media, 172 MW de pico).
 
-No depende de fechas.
+No depende de fechas: es copia de la de DatosEnriquecimiento.
 
 
 5. turismo/aruba_turismo_mensual.csv
@@ -100,9 +104,10 @@ Descarga de Open-Meteo los datos reales del 31 de agosto de 2025 al
   - Temperatura, humedad, lluvia y presion.
 
 Pasa los datos a intervalos de 5 minutos y anade un timestamp ya
-ajustado para cruzarlo con las lecturas.
+ajustado para cruzarlo con las lecturas. Lo guarda en
+clima_solar/aruba_meteo_real_5min.csv.gz.
 Uso, desde la raiz del repo:
-  python DatosEnriquecimiento/scripts/descargar_meteo_real.py
+  python DatosEnriquecimiento1Año/scripts/descargar_meteo_real.py
 
 
 PROBLEMAS DETECTADOS EN Datos/aruba_readings_20260924.json
