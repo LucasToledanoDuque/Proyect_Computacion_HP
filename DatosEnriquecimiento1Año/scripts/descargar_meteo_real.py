@@ -3,7 +3,7 @@ Descarga datos meteorológicos REALES de Aruba (Open-Meteo, reanálisis/históri
 para las 12 estaciones del dataset + el parque eólico Vader Piet, y los deja
 interpolados a 5 minutos para poder cruzarlos con aruba_readings_20260924.json.
 
-Uso (desde la raíz del repo):  python DatosEnriquecimiento/scripts/descargar_meteo_real.py
+Uso (desde la raíz del repo):  python DatosEnriquecimiento1Año/scripts/descargar_meteo_real.py
 Requisitos: pip install requests pandas
 """
 import json, time
@@ -48,6 +48,7 @@ for p in puntos:
     time.sleep(1)
 
 out = pd.concat(frames, ignore_index=True)
-destino = BASE / "clima_solar" / "aruba_meteo_real_5min.csv"
+# Comprimido: sin comprimir supera el límite de 100 MB de GitHub. pd.read_csv lo lee directamente.
+destino = BASE / "clima_solar" / "aruba_meteo_real_5min.csv.gz"
 out.to_csv(destino, index=False)
 print("Guardado:", destino, len(out), "filas")
