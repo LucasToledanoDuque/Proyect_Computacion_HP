@@ -1,9 +1,8 @@
 ,valor
 Filas,1287072
 Estaciones,12
-Desde,2025-09-01 12:00
-Hasta,2026-09-17 21:55
-Lecturas duplicadas,0
+Desde,2025-09-01 12:00:00+00:00
+Hasta,2026-09-17 21:55:00+00:00
+Duplicados,0
 Valores nulos,0
-Instantes sin datos,2592
-Días sin datos (aprox.),9.0
+Días sin datos,9.0

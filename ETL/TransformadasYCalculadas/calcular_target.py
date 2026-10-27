@@ -1,51 +1,49 @@
 """
-Calcula variables derivadas y el target P_renovable_MW del Gemelo Digital de Aruba.
+Calcula las variables derivadas y el target (P_renovable_MW) a partir de las
+lecturas corregidas y de los datos de enriquecimiento.
 
-Entrada:
-  - ETL/transformado/db_meteorologica_sinDesfase.csv.gz        (lecturas cada 5 min, salida del notebook)
-  - DatosEnriquecimiento/clima_solar/aruba_solar_estaciones_5min.csv.gz
-  - DatosEnriquecimiento/calendario/aruba_calendario_5min.csv
-Salida:
-  - ETL/TransformadasYCalculadas/dataset_modelo_5min.csv.gz
-
-Uso: botón ▶ de VS Code, o desde la raíz del repo:
-  python ETL/TransformadasYCalculadas/calcular_target.py [ruta_lecturas] [carpeta_DatosEnriquecimiento]
+Entrada: ETL/transformado/db_meteorologica_sinDesfase.csv.gz
+         DatosEnriquecimiento/clima_solar y DatosEnriquecimiento/calendario
+Salida:  dataset_modelo_5min.csv.gz (en esta misma carpeta)
 """
-import sys
 from pathlib import Path
 import numpy as np
 import pandas as pd
 
 RAIZ = Path(__file__).resolve().parents[2]
-LECTURAS = Path(sys.argv[1]) if len(sys.argv) > 1 else RAIZ / "ETL" / "transformado" / "db_meteorologica_sinDesfase.csv.gz"
-ENR = Path(sys.argv[2]) if len(sys.argv) > 2 else RAIZ / "DatosEnriquecimiento"
+LECTURAS = RAIZ / "ETL" / "transformado" / "db_meteorologica_sinDesfase.csv.gz"
+ENR = RAIZ / "DatosEnriquecimiento"
 SALIDA = Path(__file__).resolve().parent / "dataset_modelo_5min.csv.gz"
 
-# ---------------------------------------------------------------- constantes
-ST_SAN_NICOLAAS = "963fdb57-b257-472d-b56e-892b265c2524"   # estación más cercana a Vader Piet y a Sunrise Solar Park
+# Estación más cercana al parque eólico y a la planta solar
+SAN_NICOLAAS = "963fdb57-b257-472d-b56e-892b265c2524"
 
-# Eólica: Vader Piet (10 turbinas de 3 MW, buje a 80 m)
-N_TURBINAS, P_NOMINAL_MW, ALTURA_BUJE, ALTURA_MEDIDA = 10, 3.0, 80, 10
-ALFA_CIZALLA = 0.14            # exponente de la ley potencial del perfil de viento
+# Parque eólico Vader Piet: 10 turbinas de 3 MW con el buje a 80 m
+N_TURBINAS = 10
+ALTURA_BUJE = 80
+ALTURA_MEDIDA = 10
 DISPONIBILIDAD = 0.95
-RHO_REF = 1.225                # densidad del aire de la curva de potencia (kg/m3)
-# Curva de potencia aproximada de una turbina de 3 MW tipo V90 (valores orientativos, kW)
+
+# Curva de potencia aproximada de una turbina de 3 MW (velocidad en m/s, potencia en kW)
 CURVA_V = [0, 3.49, 3.5, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 25, 25.01]
 CURVA_P = [0, 0, 40, 80, 190, 350, 590, 890, 1270, 1700, 2150, 2550, 2850, 2970, 3000, 3000, 0]
 
-# Solar: Sunrise Solar Park
+# Planta solar Sunrise Solar Park
 P_SOLAR_MW = 6.1
-PR = 0.85                      # performance ratio (inversor, cableado, suciedad)
-COEF_TEMP = -0.004             # pérdida por cada °C de célula por encima de 25 °C
-NOCT_DELTA = 25                # célula ~25 °C más caliente que el aire con 1000 W/m2
+RENDIMIENTO = 0.85
 
-H1, H24 = 12, 288              # pasos de 5 min en 1 h y 24 h
+# Número de filas de 5 minutos que hay en 1 hora y en 24 horas
+UNA_HORA = 12
+UN_DIA = 288
 
 
-def potencia_eolica(v80_ms, rho):
-    p_kw = np.interp(v80_ms, CURVA_V, CURVA_P, left=0, right=0)
-    p_kw = np.minimum(p_kw * rho / RHO_REF, 3000)   # corrección por densidad del aire
-    return p_kw / 1000 * N_TURBINAS * DISPONIBILIDAD
+def potencia_eolica(viento_80m, densidad):
+    # Potencia de una turbina según la curva (en kW)
+    p = np.interp(viento_80m, CURVA_V, CURVA_P)
+    # Con aire más denso la turbina da algo más, pero nunca más de 3000 kW
+    p = np.minimum(p * densidad / 1.225, 3000)
+    # Pasamos a MW y multiplicamos por las 10 turbinas
+    return p / 1000 * N_TURBINAS * DISPONIBILIDAD
 
 
 def main():
@@ -54,86 +52,100 @@ def main():
     d["timestamp"] = pd.to_datetime(d["timestamp"], utc=True)
     d = d.drop_duplicates(["station_id", "timestamp"])
 
-    # ---------------- variables derivadas por lectura (todas las estaciones)
-    T, HR = d["temperature_c"], d["humidity_pct"]
-    a, b = 17.62, 243.12
-    gamma = np.log(HR / 100) + a * T / (b + T)
-    d["punto_rocio_c"] = (b * gamma / (a - gamma)).round(2)
-    e = HR / 100 * 6.112 * np.exp(a * T / (b + T))                     # presión de vapor (hPa)
-    d["densidad_aire_kgm3"] = ((d["pressure_hpa"] - e) * 100 / (287.05 * (T + 273.15))
-                               + e * 100 / (461.5 * (T + 273.15))).round(4)
-    rad = np.deg2rad(d["wind_direction_deg"])
-    d["viento_u_kmh"] = (-d["wind_speed_kmh"] * np.sin(rad)).round(2)  # componente este-oeste
-    d["viento_v_kmh"] = (-d["wind_speed_kmh"] * np.cos(rad)).round(2)  # componente norte-sur
+    T = d["temperature_c"]
+    HR = d["humidity_pct"]
 
-    # referencia de UV con cielo despejado: percentil 95 por mes y hora-minuto
-    clave = [d["timestamp"].dt.month, d["timestamp"].dt.hour, d["timestamp"].dt.minute]
-    d["uv_ref"] = d.groupby(clave)["uv_index"].transform(lambda s: s.quantile(0.95))
+    # Punto de rocío (fórmula de Magnus)
+    g = np.log(HR / 100) + 17.62 * T / (243.12 + T)
+    d["punto_rocio_c"] = (243.12 * g / (17.62 - g)).round(2)
 
-    # ---------------- media de la isla (12 estaciones)
-    cols_isla = ["temperature_c", "humidity_pct", "wind_speed_kmh", "pressure_hpa",
-                 "precipitation_mm", "visibility_km", "uv_index"]
-    isla = d.groupby("timestamp")[cols_isla].mean().round(2).add_prefix("isla_")
+    # Densidad del aire húmedo: parte de aire seco + parte de vapor de agua
+    presion_vapor = HR / 100 * 6.112 * np.exp(17.62 * T / (243.12 + T))
+    temp_kelvin = T + 273.15
+    aire_seco = (d["pressure_hpa"] - presion_vapor) * 100 / (287.05 * temp_kelvin)
+    vapor = presion_vapor * 100 / (461.5 * temp_kelvin)
+    d["densidad_aire_kgm3"] = (aire_seco + vapor).round(4)
 
-    # ---------------- estación de referencia (San Nicolaas)
-    sn = d[d["station_id"] == ST_SAN_NICOLAAS].set_index("timestamp").sort_index()
+    # Viento separado en dirección este-oeste (u) y norte-sur (v)
+    angulo = np.deg2rad(d["wind_direction_deg"])
+    d["viento_u_kmh"] = (-d["wind_speed_kmh"] * np.sin(angulo)).round(2)
+    d["viento_v_kmh"] = (-d["wind_speed_kmh"] * np.cos(angulo)).round(2)
+
+    # UV de un día despejado: el percentil 95 del mismo mes, hora y minuto
+    grupos = [d["timestamp"].dt.month, d["timestamp"].dt.hour, d["timestamp"].dt.minute]
+    d["uv_ref"] = d.groupby(grupos)["uv_index"].transform(lambda x: x.quantile(0.95))
+
+    # Media de las 12 estaciones en cada instante
+    columnas_isla = ["temperature_c", "humidity_pct", "wind_speed_kmh", "pressure_hpa",
+                     "precipitation_mm", "visibility_km", "uv_index"]
+    isla = d.groupby("timestamp")[columnas_isla].mean().round(2).add_prefix("isla_")
+
+    # Nos quedamos con San Nicolaas y le añadimos la media de la isla
+    sn = d[d["station_id"] == SAN_NICOLAAS].set_index("timestamp").sort_index()
     df = sn[["temperature_c", "humidity_pct", "wind_speed_kmh", "wind_direction_deg", "pressure_hpa",
              "precipitation_mm", "visibility_km", "uv_index", "punto_rocio_c", "densidad_aire_kgm3",
              "viento_u_kmh", "viento_v_kmh", "uv_ref"]].join(isla)
 
-    # ---------------- solar y calendario
-    key = df.index.strftime("%Y-%m-%dT%H:%M:%SZ")
+    # Añadimos la posición del sol y el calendario (se cruzan por el timestamp en texto)
+    fechas = df.index.strftime("%Y-%m-%dT%H:%M:%SZ")
     sol = pd.read_csv(ENR / "clima_solar" / "aruba_solar_estaciones_5min.csv.gz")
-    sol = sol[sol["station_id"] == ST_SAN_NICOLAAS].set_index("timestamp")
-    df = df.join(sol[["solar_elevation_deg", "solar_azimuth_deg", "ghi_clearsky_wm2", "is_daylight"]]
-                 .reindex(key).set_axis(df.index))
+    sol = sol[sol["station_id"] == SAN_NICOLAAS].set_index("timestamp")
+    sol = sol[["solar_elevation_deg", "solar_azimuth_deg", "ghi_clearsky_wm2", "is_daylight"]]
+    df = df.join(sol.reindex(fechas).set_axis(df.index))
+
     cal = pd.read_csv(ENR / "calendario" / "aruba_calendario_5min.csv", dtype={"festivo_nombre": str})
     cal = cal.set_index("timestamp")[["hora_local", "dia_semana", "es_fin_de_semana", "es_festivo",
                                       "es_laborable", "hora_sin", "hora_cos", "dow_sin", "dow_cos",
                                       "doy_sin", "doy_cos", "turistas_stopover_dia_medio"]]
-    df = df.join(cal.reindex(key).set_axis(df.index))
+    df = df.join(cal.reindex(fechas).set_axis(df.index))
 
-    # ---------------- EÓLICA
+    # Eólica: pasamos a m/s y subimos el viento de 10 a 80 m (ley potencial, exponente 0,14)
     df["viento_10m_ms"] = (df["wind_speed_kmh"] / 3.6).round(3)
-    df["viento_80m_ms"] = (df["viento_10m_ms"] * (ALTURA_BUJE / ALTURA_MEDIDA) ** ALFA_CIZALLA).round(3)
+    df["viento_80m_ms"] = (df["viento_10m_ms"] * (ALTURA_BUJE / ALTURA_MEDIDA) ** 0.14).round(3)
     df["P_eolica_MW"] = potencia_eolica(df["viento_80m_ms"], df["densidad_aire_kgm3"]).round(3)
 
-    # ---------------- SOLAR
-    k = np.where(df["uv_ref"] >= 0.5, df["uv_index"] / df["uv_ref"].where(df["uv_ref"] >= 0.5), 1.0)
-    df["factor_nubes"] = np.clip(k, 0, 1.1).round(3)
+    # Solar: factor de nubes = UV medido / UV de un día despejado.
+    # De noche y al amanecer el UV de referencia es casi 0, así que ahí ponemos 1.
+    factor = df["uv_index"] / df["uv_ref"]
+    factor[df["uv_ref"] < 0.5] = 1.0
+    df["factor_nubes"] = factor.clip(0, 1.1).round(3)
     df["ghi_estimada_wm2"] = (df["ghi_clearsky_wm2"] * df["factor_nubes"]).round(1)
-    t_celula = df["temperature_c"] + df["ghi_estimada_wm2"] / 1000 * NOCT_DELTA
-    df["temp_celula_c"] = t_celula.round(2)
-    f_temp = 1 + COEF_TEMP * (t_celula - 25)
-    df["P_solar_MW"] = np.clip(P_SOLAR_MW * df["ghi_estimada_wm2"] / 1000 * PR * f_temp, 0, P_SOLAR_MW).round(3)
 
-    # ---------------- TARGET
+    # Los paneles se calientan con el sol y pierden un 0,4 % por cada grado por encima de 25 °C
+    temp_celula = df["temperature_c"] + df["ghi_estimada_wm2"] / 1000 * 25
+    df["temp_celula_c"] = temp_celula.round(2)
+    perdida_calor = 1 - 0.004 * (temp_celula - 25)
+    solar = P_SOLAR_MW * df["ghi_estimada_wm2"] / 1000 * RENDIMIENTO * perdida_calor
+    df["P_solar_MW"] = solar.clip(0, P_SOLAR_MW).round(3)
+
+    # Target: generación renovable total
     df["P_renovable_MW"] = (df["P_eolica_MW"] + df["P_solar_MW"]).round(3)
 
-    # rejilla completa de 5 min para que los desplazamientos respeten los huecos
-    rejilla = pd.date_range(df.index.min(), df.index.max(), freq="5min")
-    df = df.reindex(rejilla)
+    # Rellenamos los instantes que faltan con filas vacías, para que los
+    # desplazamientos de 1 h y 24 h no se salten los huecos
+    todas = pd.date_range(df.index.min(), df.index.max(), freq="5min")
+    df = df.reindex(todas)
     df.index.name = "timestamp"
     df["hay_lectura"] = df["temperature_c"].notna().astype(int)
 
-    # lags e históricos (solo información del pasado)
+    # Valores del pasado, que el modelo sí puede usar
     pr = df["P_renovable_MW"]
-    df["P_renovable_lag_1h"] = pr.shift(H1)
-    df["P_renovable_lag_24h"] = pr.shift(H24)
-    df["P_renovable_media_1h"] = pr.rolling(H1, min_periods=H1).mean().round(3)
-    df["viento_media_1h_kmh"] = df["wind_speed_kmh"].rolling(H1, min_periods=H1).mean().round(2)
-    df["viento_std_1h_kmh"] = df["wind_speed_kmh"].rolling(H1, min_periods=H1).std().round(2)
-    df["viento_lag_1h_kmh"] = df["wind_speed_kmh"].shift(H1)
-    df["presion_tendencia_3h_hpa"] = (df["pressure_hpa"] - df["pressure_hpa"].shift(3 * H1)).round(2)
+    viento = df["wind_speed_kmh"]
+    df["P_renovable_lag_1h"] = pr.shift(UNA_HORA)
+    df["P_renovable_lag_24h"] = pr.shift(UN_DIA)
+    df["P_renovable_media_1h"] = pr.rolling(UNA_HORA).mean().round(3)
+    df["viento_media_1h_kmh"] = viento.rolling(UNA_HORA).mean().round(2)
+    df["viento_std_1h_kmh"] = viento.rolling(UNA_HORA).std().round(2)
+    df["viento_lag_1h_kmh"] = viento.shift(UNA_HORA)
+    df["presion_tendencia_3h_hpa"] = (df["pressure_hpa"] - df["pressure_hpa"].shift(3 * UNA_HORA)).round(2)
 
-    # targets a futuro
-    df["target_P_renovable_t+1h"] = pr.shift(-H1)
-    df["target_P_renovable_t+24h"] = pr.shift(-H24)
+    # Lo que queremos predecir: la generación dentro de 1 h y de 24 h
+    df["target_P_renovable_t+1h"] = pr.shift(-UNA_HORA)
+    df["target_P_renovable_t+24h"] = pr.shift(-UN_DIA)
 
     df = df.drop(columns=["uv_ref"])
     df.index = df.index.strftime("%Y-%m-%dT%H:%M:%SZ")
-    SALIDA.parent.mkdir(parents=True, exist_ok=True)
-    df.to_csv(SALIDA, compression={"method": "gzip", "compresslevel": 9})
+    df.to_csv(SALIDA, compression="gzip")
     print("Guardado:", SALIDA, df.shape)
 
 
