@@ -1,0 +1,13 @@
+estacion,temperature_c,wind_speed_kmh,humidity_pct,elevation_m,district
+Palm Beach,28.63,22.22,77.01,3,Noord
+Savaneta,28.44,22.27,77.13,4,Savaneta
+Malmok,28.58,22.37,76.84,6,Noord
+Oranjestad Central,28.55,22.38,77.01,5,Oranjestad
+San Nicolaas,28.34,22.45,77.2,8,San Nicolaas
+Noord,28.55,22.78,76.91,15,Noord
+Queen Beatrix Airport,28.44,23.08,76.95,18,Oranjestad
+Alto Vista,28.59,23.41,76.98,25,Noord
+Paradera,28.41,23.68,77.01,30,Paradera
+Santa Cruz,28.27,24.36,76.93,45,Santa Cruz
+Arikok National Park,27.82,28.07,77.02,120,Santa Cruz
+Hooiberg Summit,27.44,30.26,76.89,165,Santa Cruz
