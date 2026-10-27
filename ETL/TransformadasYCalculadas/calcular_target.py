@@ -2,14 +2,14 @@
 Calcula variables derivadas y el target P_renovable_MW del Gemelo Digital de Aruba.
 
 Entrada:
-  - Datos/db_meteorologica_sinDesfase.csv                      (lecturas cada 5 min)
+  - ETL/transformado/db_meteorologica_sinDesfase.csv.gz        (lecturas cada 5 min, salida del notebook)
   - DatosEnriquecimiento/clima_solar/aruba_solar_estaciones_5min.csv.gz
   - DatosEnriquecimiento/calendario/aruba_calendario_5min.csv
 Salida:
-  - DatosEnriquecimiento/dataset_modelo/dataset_modelo_5min.csv.gz
+  - ETL/TransformadasYCalculadas/dataset_modelo_5min.csv.gz
 
-Uso (desde la raíz del repo):
-  python DatosEnriquecimiento/scripts/calcular_target.py [ruta_lecturas.csv] [carpeta_DatosEnriquecimiento]
+Uso: botón ▶ de VS Code, o desde la raíz del repo:
+  python ETL/TransformadasYCalculadas/calcular_target.py [ruta_lecturas] [carpeta_DatosEnriquecimiento]
 """
 import sys
 from pathlib import Path
@@ -17,9 +17,9 @@ import numpy as np
 import pandas as pd
 
 RAIZ = Path(__file__).resolve().parents[2]
-LECTURAS = Path(sys.argv[1]) if len(sys.argv) > 1 else RAIZ / "Datos" / "db_meteorologica_sinDesfase.csv"
+LECTURAS = Path(sys.argv[1]) if len(sys.argv) > 1 else RAIZ / "ETL" / "transformado" / "db_meteorologica_sinDesfase.csv.gz"
 ENR = Path(sys.argv[2]) if len(sys.argv) > 2 else RAIZ / "DatosEnriquecimiento"
-SALIDA = ENR / "dataset_modelo" / "dataset_modelo_5min.csv.gz"
+SALIDA = Path(__file__).resolve().parent / "dataset_modelo_5min.csv.gz"
 
 # ---------------------------------------------------------------- constantes
 ST_SAN_NICOLAAS = "963fdb57-b257-472d-b56e-892b265c2524"   # estación más cercana a Vader Piet y a Sunrise Solar Park

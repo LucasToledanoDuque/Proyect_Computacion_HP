@@ -20,21 +20,40 @@ El proyecto consiste en el desarrollo de un gemelo digital del sistema eléctric
 
 ```
 .
-├── data/
-│   ├── raw/             Datos originales sin procesar
-│   └── processed/       Datos depurados para el entrenamiento
-├── docs/                Anteproyecto, entregas y memoria
-├── models/              Modelos entrenados
-├── notebooks/           Análisis exploratorio y prototipos
-├── src/
-│   ├── data/            Carga y preprocesado de datos
-│   ├── models/          Entrenamiento y evaluación
-│   ├── dispatch/        Lógica de despacho energético
-│   └── visualization/   Visualización de resultados
-├── tests/               Pruebas
+├── Datos/                               Datos originales de la asignatura
+│   ├── aruba_stations.json              12 estaciones meteorológicas
+│   ├── aruba_readings_20260924.json     Lecturas cada 5 min (Git LFS)
+│   └── Variables.py                     Descripción de los campos
+├── DatosEnriquecimiento/                Datos externos (sep 2025 – sep 2026)
+│   ├── calendario/                      Festivos, fines de semana, turismo por día
+│   ├── clima_solar/                     Posición solar, radiación y meteo real (Open-Meteo)
+│   ├── estaciones/                      Estaciones + distancia al parque eólico
+│   ├── sistema_electrico/               Plantas de WEB Aruba y demanda de referencia
+│   ├── turismo/                         Turistas y cruceristas por mes
+│   ├── scripts/descargar_meteo_real.py  Descarga los datos de Open-Meteo
+│   └── descripcion de datos.txt
+├── ETL/
+│   ├── datos_entrada/                   JSON de lecturas que entran al ETL (Git LFS)
+│   ├── ETLScript.py                     1. Une y limpia las lecturas
+│   ├── correccion_12h_desfase.ipynb     2. Corrige el desfase de 12 h
+│   ├── transformado/                    Salidas del ETL y del notebook
+│   └── TransformadasYCalculadas/
+│       ├── calcular_target.py           3. Variables calculadas y target
+│       ├── dataset_modelo_5min.csv.gz   Dataset final para entrenar
+│       └── diccionario_variables.txt    Explicación de cada columna
 ├── requirements.txt
 └── README.md
 ```
+
+### Cómo ejecutar el pipeline
+
+Todo se puede lanzar con el botón ▶ de VS Code; las rutas son relativas a cada script.
+
+1. `ETL/ETLScript.py` → genera `ETL/transformado/db_meteorologica_unificada.json` (no se sube al repo, 532 MB).
+2. `ETL/correccion_12h_desfase.ipynb` → genera `ETL/transformado/db_meteorologica_sinDesfase.csv.gz`.
+3. `ETL/TransformadasYCalculadas/calcular_target.py` → genera `dataset_modelo_5min.csv.gz`.
+
+Los JSON se guardan con Git LFS: después de clonar, ejecutar `git lfs install` y `git lfs pull`.
 
 ## Tecnologías
 

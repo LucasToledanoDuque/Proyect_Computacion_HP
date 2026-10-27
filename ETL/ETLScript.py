@@ -19,8 +19,10 @@ def fusionar_y_limpiar_datos(df, columnas_clave):
 
 def ejecutar_etl_meteorologico():
     # Configuración de carpetas
-    carpeta_entrada = 'datos_entrada'
-    carpeta_salida = 'transformado'
+    # Rutas relativas a este script: funciona con el botón ▶ desde cualquier carpeta
+    base = os.path.dirname(os.path.abspath(__file__))
+    carpeta_entrada = os.path.join(base, 'datos_entrada')
+    carpeta_salida = os.path.join(base, 'transformado')
     
     if not os.path.exists(carpeta_salida):
         os.makedirs(carpeta_salida)
