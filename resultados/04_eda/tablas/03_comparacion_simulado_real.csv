@@ -1,0 +1,6 @@
+variable,media simulada,media real,correlación,error medio
+Temperatura (°C),28.34,28.21,0.6,1.87
+Humedad (%),76.99,73.34,0.47,6.67
+Viento a 10 m (km/h),23.94,27.85,0.06,6.62
+Presión (hPa),1014.38,1009.79,0.14,4.66
+Lluvia anual (mm),1145.27,367.19,,

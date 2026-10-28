@@ -15,3 +15,8 @@ __pycache__/
 Thumbs.db
 .vscode/
 .idea/
+
+# Salida intermedia del ETL (532 MB, se regenera con ETLScript.py)
+ETL/transformado/db_meteorologica_unificada.json
+# Lo sube Daniel en su rama: no duplicarlo
+ETL/transformado/db_meteorologica_sinDesfase.csv.gz
