@@ -1,0 +1,9 @@
+variable,rango válido,mínimo,máximo,fuera de rango
+temperature_c,-10 a 50,20.0,35.5,0
+humidity_pct,0 a 100,62.3,100.0,0
+wind_speed_kmh,0 a 200,12.2,57.4,0
+wind_direction_deg,0 a 360,14.3,75.8,0
+pressure_hpa,870 a 1085,997.6,1017.0,0
+precipitation_mm,0 a 500,0.0,20.7,0
+visibility_km,0 a 100,0.5,13.4,0
+uv_index,0 a 20,0.0,9.4,0
