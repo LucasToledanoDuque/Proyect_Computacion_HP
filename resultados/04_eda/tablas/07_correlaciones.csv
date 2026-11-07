@@ -1,0 +1,9 @@
+,temperature_c,humidity_pct,wind_speed_kmh,wind_direction_deg,pressure_hpa,precipitation_mm,visibility_km,uv_index
+temperature_c,1.0,-0.832,0.21,-0.002,0.088,-0.01,0.005,0.689
+humidity_pct,-0.832,1.0,-0.238,0.012,-0.189,0.02,-0.01,-0.651
+wind_speed_kmh,0.21,-0.238,1.0,-0.001,0.007,-0.0,-0.001,0.057
+wind_direction_deg,-0.002,0.012,-0.001,1.0,-0.006,0.002,-0.0,0.006
+pressure_hpa,0.088,-0.189,0.007,-0.006,1.0,-0.052,0.027,0.0
+precipitation_mm,-0.01,0.02,-0.0,0.002,-0.052,1.0,-0.519,-0.01
+visibility_km,0.005,-0.01,-0.001,-0.0,0.027,-0.519,1.0,0.004
+uv_index,0.689,-0.651,0.057,0.006,0.0,-0.01,0.004,1.0

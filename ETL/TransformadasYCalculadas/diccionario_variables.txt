@@ -1,0 +1,229 @@
+DICCIONARIO DE VARIABLES - dataset_modelo_5min.csv.gz
+Gemelo Digital de Aruba - Proyectos de Computacion I
+==================================================================
+
+Fichero generado por calcular_target.py a partir de
+Datos/db_meteorologica_sinDesfase.csv.
+
+  - Una fila cada 5 minutos, del 1 sep 2025 12:00 al 17 sep 2026 21:55.
+  - 109.848 filas (107.256 con lectura) y 53 columnas + timestamp.
+  - Estacion de referencia: San Nicolaas, la mas cercana al parque
+    eolico Vader Piet (~4,6 km) y al Sunrise Solar Park.
+
+Columna USO:
+  ENTRADA     -> se puede usar como entrada del modelo
+  NO USAR     -> no usar como entrada (copia el target o es control)
+  TARGET      -> lo que el modelo tiene que predecir
+
+
+0. INDICE
+------------------------------------------------------------------
+timestamp
+  Unidad: fecha y hora (formato AAAA-MM-DDTHH:MM:SSZ)
+  Instante de la lectura. Aunque lleva "Z", se comporta como hora
+  local de Aruba (UTC-4): el UV es maximo a las 12:00.
+  Uso: indice (no es una entrada)
+
+
+1. LECTURAS DE SAN NICOLAAS (datos originales)
+------------------------------------------------------------------
+temperature_c            °C      Temperatura del aire.          ENTRADA
+humidity_pct             %       Humedad relativa.              ENTRADA
+wind_speed_kmh           km/h    Velocidad del viento a 10 m.   ENTRADA
+wind_direction_deg       grados  Direccion de la que viene el
+                                 viento (0 = norte, 90 = este). ENTRADA
+pressure_hpa             hPa     Presion atmosferica.           ENTRADA
+precipitation_mm         mm      Lluvia en los 5 minutos.       ENTRADA
+visibility_km            km      Visibilidad.                   ENTRADA
+uv_index                 -       Indice UV (0 de noche, ~8 a
+                                 mediodia).                     ENTRADA
+
+
+2. MEDIA DE LAS 12 ESTACIONES (calculadas)
+------------------------------------------------------------------
+Media de todas las estaciones en ese instante. Dan una vision del
+tiempo en toda la isla, no solo en San Nicolaas.
+
+isla_temperature_c       °C      Temperatura media.             ENTRADA
+isla_humidity_pct        %       Humedad media.                 ENTRADA
+isla_wind_speed_kmh      km/h    Viento medio.                  ENTRADA
+isla_pressure_hpa        hPa     Presion media.                 ENTRADA
+isla_precipitation_mm    mm      Lluvia media.                  ENTRADA
+isla_visibility_km       km      Visibilidad media.             ENTRADA
+isla_uv_index            -       UV medio.                      ENTRADA
+
+
+3. VARIABLES DEL AIRE (calculadas)
+------------------------------------------------------------------
+punto_rocio_c            °C      ENTRADA
+  Temperatura a la que el aire se saturaria y empezaria a condensar.
+  Formula de Magnus con temperatura y humedad:
+    g = ln(HR/100) + 17,62*T/(243,12+T)
+    punto_rocio = 243,12*g / (17,62-g)
+
+densidad_aire_kgm3       kg/m3   ENTRADA
+  Densidad del aire humedo. Cuanto mas denso, mas energia lleva el
+  viento. Se calcula con presion, temperatura y humedad (ley de los
+  gases ideales con aire seco + vapor de agua). Valor tipico en
+  Aruba: 1,16 (a nivel del mar y 15 °C seria 1,225).
+
+viento_u_kmh             km/h    ENTRADA
+viento_v_kmh             km/h    ENTRADA
+  El viento separado en dos componentes: u (este-oeste) y v
+  (norte-sur). Evita que el modelo vea 359° y 1° como valores muy
+  distintos cuando son casi la misma direccion.
+    u = -velocidad * sen(direccion)
+    v = -velocidad * cos(direccion)
+
+
+4. SOL (calculadas con pvlib)
+------------------------------------------------------------------
+solar_elevation_deg      grados  ENTRADA
+  Altura del sol sobre el horizonte (negativa de noche, ~90 a
+  mediodia en verano).
+solar_azimuth_deg        grados  ENTRADA
+  Direccion del sol (90 = este, 180 = sur, 270 = oeste).
+ghi_clearsky_wm2         W/m2    ENTRADA
+  Radiacion que llegaria al suelo con el cielo totalmente despejado
+  (modelo Ineichen). Es el maximo posible en ese instante.
+is_daylight              0/1     ENTRADA
+  1 si el sol esta por encima del horizonte.
+
+
+5. CALENDARIO
+------------------------------------------------------------------
+hora_local               0-23    Hora del dia.                  ENTRADA
+dia_semana               0-6     0 = lunes ... 6 = domingo.     ENTRADA
+es_fin_de_semana         0/1     Sabado o domingo.              ENTRADA
+es_festivo               0/1     Festivo oficial de Aruba.      ENTRADA
+es_laborable             0/1     Ni fin de semana ni festivo.   ENTRADA
+hora_sin / hora_cos      -1 a 1  ENTRADA
+  La hora en formato circular: sen y cos de (2*pi*hora/24). Asi el
+  modelo entiende que las 23:55 estan pegadas a las 00:00.
+dow_sin / dow_cos        -1 a 1  ENTRADA
+  El dia de la semana en formato circular (domingo pegado a lunes).
+doy_sin / doy_cos        -1 a 1  ENTRADA
+  El dia del anio en formato circular (diciembre pegado a enero).
+  Recoge la epoca del anio.
+turistas_stopover_dia_medio  personas/dia  ENTRADA
+  Turistas que llegaron ese mes / dias del mes (datos de la Aruba
+  Tourism Authority). Vacio en septiembre de 2026 (no publicado).
+
+
+6. CALCULO DE LA EOLICA (parque Vader Piet, 30 MW)
+------------------------------------------------------------------
+viento_10m_ms            m/s     ENTRADA
+  wind_speed_kmh / 3,6.
+
+viento_80m_ms            m/s     ENTRADA
+  Viento a la altura de las turbinas (80 m), con la ley potencial:
+    v80 = v10 * (80/10)^0,14
+
+P_eolica_MW              MW      NO USAR (forma parte del target)
+  Potencia del parque:
+    1. Curva de potencia aproximada de una turbina de 3 MW tipo V90
+       (valores orientativos): 0 por debajo de 3,5 m/s, sube hasta
+       3 MW a 15 m/s, 3 MW hasta 25 m/s y 0 por encima.
+    2. Correccion por densidad: x densidad_aire / 1,225 (maximo 3 MW).
+    3. x 10 turbinas x 0,95 de disponibilidad.
+  Maximo teorico 28,5 MW; en los datos va de 1,6 a 27,4 MW.
+  Media: 9,4 MW (31 % de la capacidad).
+
+
+7. CALCULO DE LA SOLAR (Sunrise Solar Park, 6,1 MW)
+------------------------------------------------------------------
+factor_nubes             0 - 1,1 ENTRADA
+  UV medido / UV de referencia con cielo despejado. La referencia
+  es el percentil 95 del UV del mismo mes, hora y minuto en las
+  12 estaciones. 1 = despejado, valores bajos = nubes. Al amanecer
+  y al anochecer no es fiable (UV casi 0), pero entonces la
+  produccion solar es casi nula.
+
+ghi_estimada_wm2         W/m2    ENTRADA
+  Radiacion estimada que llega a los paneles:
+    ghi_clearsky_wm2 * factor_nubes
+
+temp_celula_c            °C      ENTRADA
+  Temperatura estimada de los paneles (se calientan con el sol):
+    temperatura_aire + ghi_estimada/1000 * 25
+
+P_solar_MW               MW      NO USAR (forma parte del target)
+  Potencia de la planta:
+    6,1 * ghi_estimada/1000 * 0,85 * (1 - 0,004 * (temp_celula - 25))
+  0,85 = rendimiento (inversor, cableado, suciedad).
+  -0,4 % por cada grado de los paneles por encima de 25 °C.
+  Rango: 0 - 4,8 MW. Media: 1,2 MW (20 % de la capacidad).
+
+
+8. GENERACION TOTAL
+------------------------------------------------------------------
+P_renovable_MW           MW      NO USAR (es el target en t)
+  P_eolica_MW + P_solar_MW. Media 10,6 MW, rango 1,6 - 30,9 MW.
+
+
+9. HISTORICO (solo informacion del pasado)
+------------------------------------------------------------------
+P_renovable_lag_1h       MW      Generacion de hace 1 hora.     ENTRADA
+P_renovable_lag_24h      MW      Generacion de hace 24 horas.   ENTRADA
+P_renovable_media_1h     MW      Media de la ultima hora
+                                 (incluye el instante actual).  ENTRADA*
+viento_lag_1h_kmh        km/h    Viento de hace 1 hora.         ENTRADA
+viento_media_1h_kmh      km/h    Viento medio en la ultima hora. ENTRADA
+viento_std_1h_kmh        km/h    Variabilidad del viento en la
+                                 ultima hora (desviacion tipica). ENTRADA
+presion_tendencia_3h_hpa hPa     Cambio de presion en las
+                                 ultimas 3 horas. Si baja rapido
+                                 suele venir mal tiempo.        ENTRADA
+
+* P_renovable_media_1h incluye P_renovable_MW del instante actual.
+  Para predecir t+1h es valida (en t ya se conoce), pero si se
+  excluye P_renovable_MW por prudencia, conviene excluir esta tambien.
+
+
+10. CONTROL
+------------------------------------------------------------------
+hay_lectura              0/1     NO USAR
+  0 en los huecos sin datos (del 4 al 11 de enero y del 30 de marzo
+  al 1 de abril de 2026). Antes de entrenar, quitar las filas con 0:
+    df = df[df["hay_lectura"] == 1]
+
+
+11. TARGETS
+------------------------------------------------------------------
+target_P_renovable_t+1h  MW      TARGET
+  P_renovable_MW una hora despues (12 filas mas adelante).
+  Prediccion a corto plazo.
+
+target_P_renovable_t+24h MW      TARGET
+  P_renovable_MW 24 horas despues (288 filas mas adelante).
+  Planificacion del despacho del dia siguiente.
+
+Al final del periodo y antes de los huecos los targets quedan vacios
+(no hay dato futuro): quitar esas filas al entrenar.
+
+
+EJEMPLO DE USO EN PYTHON
+==================================================================
+import pandas as pd
+
+df = pd.read_csv("dataset_modelo_5min.csv.gz", index_col="timestamp")
+df = df[df["hay_lectura"] == 1]
+
+no_usar = ["P_eolica_MW", "P_solar_MW", "P_renovable_MW", "hay_lectura",
+           "target_P_renovable_t+1h", "target_P_renovable_t+24h"]
+objetivo = "target_P_renovable_t+1h"
+
+datos = df.dropna(subset=[objetivo])
+X = datos.drop(columns=no_usar)
+y = datos[objetivo]
+
+# Dividir por fechas, no al azar (es una serie temporal):
+corte = "2026-07-01"
+X_train, X_test = X[X.index < corte], X[X.index >= corte]
+y_train, y_test = y[y.index < corte], y[y.index >= corte]
+
+# Hay huecos en algunas entradas (lags tras los cortes de datos y los
+# turistas de septiembre de 2026). Los modelos de arboles (por ejemplo
+# HistGradientBoostingRegressor) los aceptan; para una regresion lineal
+# hay que quitarlos antes:
+#   datos = datos.dropna()
