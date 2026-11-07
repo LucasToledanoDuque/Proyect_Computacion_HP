@@ -15,7 +15,7 @@ from bs4 import BeautifulSoup
 from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.remote.webdriver import WebDriver
 
-BASE = Path(__file__).resolve().parent.parent
+BASE = Path(__file__).resolve().parents[2] / "DatosEnriquecimiento"
 SOURCES = {
     "web_aruba": "https://webaruba.com/energy/power-production-figures",
     "wartsila": (
@@ -618,7 +618,7 @@ def main():
         "--base",
         type=Path,
         default=BASE,
-        help="Directorio DatosEnriquecimiento1Año.",
+        help="Directorio DatosEnriquecimiento.",
     )
     parser.add_argument(
         "--output",
