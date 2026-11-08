@@ -3,7 +3,6 @@ from __future__ import annotations
 import argparse
 import csv
 import json
-import math
 import re
 import shutil
 import sys
@@ -44,46 +43,17 @@ FLEET_NAME_MAP = {
     "battery energy storage system i (bess i)": "BESS I",
 }
 
-# Calendarific solo da el nombre del festivo en inglés. Este diccionario lo
-# convierte al formato "Inglés (Papiamento)" que usa el calendario del proyecto.
-HOLIDAY_NAME_MAP = {
-    "new year's day": "New Year's Day (Aña Nobo)",
-    "betico croes' birthday": "Betico Croes Day (Dia di Betico)",
-    "carnival monday": "Carnival Monday (Dialuna di Carnaval)",
-    "national anthem and flag day": "National Anthem and Flag Day (Dia di Himno y Bandera)",
-    "good friday": "Good Friday (Bierna Santo)",
-    "easter monday": "Easter Monday (Di dos dia di Pasco)",
-    "king's day": "King's Day (Dia di Rey)",
-    "labor day": "Labour Day (Dia di Obrero)",
-    "ascension day": "Ascension Day (Dia di Asuncion)",
-    "christmas day": "Christmas Day (Pasco di Nacemento)",
-    "boxing day": "Boxing Day (Di dos dia di Pasco di Nacemento)",
-}
-
-# Columnas del fichero de estaciones enriquecidas, en el orden de salida.
-STATIONS_COLUMN_ORDER = (
-    "id",
-    "name",
-    "code",
-    "latitude",
-    "longitude",
-    "elevation_m",
-    "district",
-    "is_active",
-    "dist_vader_piet_km",
-)
-
 CALENDAR_COLUMN_ORDER = (
     "timestamp",
     "fecha_local",
     "hora_local",
     "minuto",
-    "dia_semana",
-    "es_fin_de_semana",
     "mes",
     "dia_del_anio",
-    "festivo_nombre",
+    "dia_semana",
+    "es_fin_de_semana",
     "es_festivo",
+    "festivo_nombre",
     "es_laborable",
     "hora_sin",
     "hora_cos",
@@ -92,6 +62,8 @@ CALENDAR_COLUMN_ORDER = (
     "doy_sin",
     "doy_cos",
     "turistas_stopover_mes",
+    "turistas_stopover_anio_anterior",
+    "turistas_variacion_pct",
     "turistas_stopover_dia_medio",
     "pasajeros_crucero_mes",
 )
@@ -241,11 +213,7 @@ def extract_holidays(pages: dict[str, BeautifulSoup]):
                             holiday_date = None
                         if holiday_date is not None:
 
-                            # Se busca el nombre con papiamento; si no existe,
-                            # se deja el nombre en inglés de Calendarific.
-                            name_key = holiday_name.casefold()
-                            full_name = HOLIDAY_NAME_MAP.get(name_key, holiday_name)
-                            holidays[holiday_date.isoformat()] = full_name
+                            holidays[holiday_date.isoformat()] = holiday_name
 
     if not holidays:
 
@@ -372,23 +340,14 @@ def update_electricity_files(
 
     reference = {
         "fuente": SOURCES["web_aruba"],
-        "capacidad_firme_total_mw": round(equipment["capacidad_firme_total_mw"], 1),
-        "renovable_total_mw": round(equipment["renovable_total_mw"], 1),
+        "fecha_extraccion_utc": captured_at,
+        "capacidad_firme_total_mw": equipment["capacidad_firme_total_mw"],
+        "renovable_total_mw": equipment["renovable_total_mw"],
+        **demand,
     }
 
-    # La demanda se guarda como entero cuando no tiene decimales
-    for key, value in demand.items():
-
-        if float(value).is_integer():
-
-            reference[key] = int(value)
-
-        else:
-
-            reference[key] = value
-
     (output_system_dir / "aruba_demanda_referencia.json").write_text(
-        json.dumps(reference, ensure_ascii=False, indent=2),
+        json.dumps(reference, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
 
@@ -411,13 +370,15 @@ def order_calendar_file(calendar_path: Path):
         column for column in CALENDAR_COLUMN_ORDER if column in fieldnames
     ]
 
+    ordered_columns.extend(
+        column for column in fieldnames if column not in ordered_columns
+    )
+
     rows.sort(key=lambda row: row["timestamp"])
 
     with calendar_path.open("w", encoding="utf-8", newline="") as stream:
 
-        writer = csv.DictWriter(
-            stream, fieldnames=ordered_columns, extrasaction="ignore"
-        )
+        writer = csv.DictWriter(stream, fieldnames=ordered_columns)
         writer.writeheader()
         writer.writerows(rows)
 
@@ -521,12 +482,26 @@ def update_calendar(
                 row["turistas_stopover_dia_medio"] = ""
 
             row["pasajeros_crucero_mes"] = cruises
+            row["turistas_stopover_anio_anterior"] = monthly.get(
+                "stopover_anio_anterior", ""
+            )
+            row["turistas_variacion_pct"] = monthly.get("var_pct", "")
 
+        else:
+
+            row.setdefault("turistas_stopover_anio_anterior", "")
+            row.setdefault("turistas_variacion_pct", "")
+
+    for column in ("turistas_stopover_anio_anterior", "turistas_variacion_pct"):
+
+        if column not in fieldnames:
+
+            fieldnames.append(column)
     output_calendar_path.parent.mkdir(parents=True, exist_ok=True)
 
     with output_calendar_path.open("w", encoding="utf-8", newline="") as stream:
 
-        writer = csv.DictWriter(stream, fieldnames=fieldnames, extrasaction="ignore")
+        writer = csv.DictWriter(stream, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(rows)
     order_calendar_file(output_calendar_path)
@@ -558,103 +533,10 @@ def format_generated_outputs(output: Path):
     copy_tourism_in_month_order(tourism_path, tourism_path)
 
 
-def vader_piet_coordinates(facts: dict[str, object]):
-
-    # La ficha de Wikipedia trae una fila "Coordinates" con el texto
-    # "... 12.47411; -69.89111". De ahí se sacan latitud y longitud.
-    for row in facts["vader_piet_ficha_publicada"]:
-
-        if row["campo"] == "Coordinates":
-
-            match = re.search(r"(-?\d+\.\d+);\s*(-?\d+\.\d+)", row["valor"])
-
-            if match:
-
-                latitude = float(match.group(1))
-                longitude = float(match.group(2))
-
-                return latitude, longitude
-
-    raise ValueError("No se encontraron las coordenadas de Vader Piet en Wikipedia.")
-
-
-def distance_km(lat_a: float, lon_a: float, lat_b: float, lon_b: float):
-
-    # Distancia en línea recta sobre la superficie de la Tierra
-    earth_radius_km = 6371.0088
-
-    lat_a_rad = math.radians(lat_a)
-    lat_b_rad = math.radians(lat_b)
-    delta_lat = lat_b_rad - lat_a_rad
-    delta_lon = math.radians(lon_b - lon_a)
-
-    haversine = (
-        math.sin(delta_lat / 2) ** 2
-        + math.cos(lat_a_rad) * math.cos(lat_b_rad) * math.sin(delta_lon / 2) ** 2
-    )
-
-    return 2 * earth_radius_km * math.asin(math.sqrt(haversine))
-
-
-def update_stations(
-    stations_path: Path,
-    output_stations_dir: Path,
-    vader_piet: tuple[float, float],
-):
-
-    stations = json.loads(stations_path.read_text(encoding="utf-8-sig"))
-
-    if not stations:
-
-        raise ValueError(f"El fichero de estaciones está vacío: {stations_path}")
-
-    rows = []
-
-    for station in stations:
-
-        distance = distance_km(
-            vader_piet[0],
-            vader_piet[1],
-            station["latitude"],
-            station["longitude"],
-        )
-
-        # Se copian los datos de la estación y se añade la distancia a Vader Piet.
-        row = {
-            "id": station.get("id"),
-            "name": station.get("name"),
-            "code": station.get("code"),
-            "latitude": station.get("latitude"),
-            "longitude": station.get("longitude"),
-            "elevation_m": station.get("elevation_m"),
-            "district": station.get("district"),
-            "is_active": station.get("is_active"),
-            "dist_vader_piet_km": round(distance, 2),
-        }
-        rows.append(row)
-
-    rows.sort(key=lambda row: row["code"])
-    output_stations_dir.mkdir(parents=True, exist_ok=True)
-
-    csv_path = output_stations_dir / "aruba_estaciones_enriquecidas.csv"
-
-    with csv_path.open("w", encoding="utf-8", newline="") as stream:
-
-        writer = csv.DictWriter(stream, fieldnames=STATIONS_COLUMN_ORDER)
-        writer.writeheader()
-        writer.writerows(rows)
-
-    # El JSON usa ":" sin espacio para mantener el formato del fichero original.
-    json_path = output_stations_dir / "aruba_estaciones_enriquecidas.json"
-    json_text = json.dumps(rows, ensure_ascii=False, indent=2, separators=(",", ":"))
-    json_path.write_text(json_text, encoding="utf-8")
-
-
 def run(
     base: Path,
     scrape: Callable[[dict[str, str]], dict[str, BeautifulSoup]] = scrape_pages,
     output: Path | None = None,
-    stations_path: Path | None = None,
 ):
     output = output or base / "salida_web"
     base_resolved = base.resolve()
@@ -697,14 +579,6 @@ def run(
         output / "turismo" / "aruba_turismo_mensual.csv",
     )
     format_generated_outputs(output)
-
-    if stations_path is not None:
-
-        update_stations(
-            stations_path,
-            output / "clima_solar_estaciones",
-            vader_piet_coordinates(context_facts),
-        )
 
     provenance = {
         "fecha_extraccion_utc": captured_at,
@@ -752,25 +626,10 @@ def main():
         default=None,
         help="Carpeta para los ficheros generados (por defecto, <base>/salida_web).",
     )
-    parser.add_argument(
-        "--stations",
-        type=Path,
-        default=Path(__file__).resolve().parent / "aruba_stations.json",
-        help="aruba_stations.json (por defecto, en la misma carpeta que este script).",
-    )
     args = parser.parse_args()
-
-    # aruba_stations.json puede a llegar a ser opcional
-    stations_path = args.stations
-
-    if not stations_path.is_file():
-
-        print(f"Aviso: no se encontró {stations_path}; no se generan las estaciones.")
-        stations_path = None
-
     try:
 
-        evidence_path = run(args.base, output=args.output, stations_path=stations_path)
+        evidence_path = run(args.base, output=args.output)
     except (OSError, ValueError, RuntimeError) as exc:
 
         print(f"Error al actualizar los datos: {exc}", file=sys.stderr)
