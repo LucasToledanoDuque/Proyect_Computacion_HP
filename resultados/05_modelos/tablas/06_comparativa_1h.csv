@@ -1,0 +1,6 @@
+modelo,MAE (MW),RMSE (MW),R²,mejora sobre la persistencia (%)
+Persistencia,0.919,1.342,0.875,0.0
+XGBoost (A),0.58,1.039,0.925,36.851
+XGBoost (B),0.62,1.084,0.919,32.476
+CatBoost (A),0.527,0.963,0.936,42.684
+CatBoost (B),0.508,0.942,0.938,44.665

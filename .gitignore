@@ -20,3 +20,6 @@ Thumbs.db
 ETL/transformado/db_meteorologica_unificada.json
 # Lo sube Daniel en su rama: no duplicarlo
 ETL/transformado/db_meteorologica_sinDesfase.csv.gz
+
+# Carpeta temporal que crea CatBoost al entrenar
+catboost_info/
