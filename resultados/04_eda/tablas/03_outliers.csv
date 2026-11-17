@@ -1,0 +1,9 @@
+variable,atípicos,% del total
+temperature_c,0,0.0
+humidity_pct,680,0.05
+wind_speed_kmh,27734,2.15
+wind_direction_deg,44012,3.42
+pressure_hpa,5350,0.42
+precipitation_mm,5463,0.42
+visibility_km,19747,1.53
+uv_index,0,0.0
