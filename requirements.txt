@@ -3,4 +3,6 @@ numpy
 matplotlib
 jupyter
 ipykernel
+beautifulsoup4
 requests
+selenium
